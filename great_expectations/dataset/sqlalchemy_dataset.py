@@ -821,7 +821,9 @@ class SqlAlchemyDataset(MetaSqlAlchemyDataset):
         if self.sql_engine_dialect.name.lower() == "mssql":
             return self._get_column_quantiles_mssql(column=column, quantiles=quantiles)
         elif self.sql_engine_dialect.name.lower() == "awsathena":
-            return self._get_column_quantiles_awsathena(column=column, quantiles=quantiles)
+            return self._get_column_quantiles_awsathena(
+                column=column, quantiles=quantiles
+            )
         elif self.sql_engine_dialect.name.lower() == "bigquery":
             return self._get_column_quantiles_bigquery(
                 column=column, quantiles=quantiles
@@ -879,9 +881,12 @@ class SqlAlchemyDataset(MetaSqlAlchemyDataset):
 
     def _get_column_quantiles_awsathena(self, column: str, quantiles: Iterable) -> list:
         import ast
+
         quantiles_list = list(quantiles)
-        quantiles_query = f"SELECT approx_percentile({column}, ARRAY{str(quantiles_list)}) as quantiles " \
-                          f"from (SELECT {column} from {self._table})"
+        quantiles_query = (
+            f"SELECT approx_percentile({column}, ARRAY{str(quantiles_list)}) as quantiles "
+            f"from (SELECT {column} from {self._table})"
+        )
         try:
             quantiles_results = self.engine.execute(quantiles_query).fetchone()[0]
             quantiles_results_list = ast.literal_eval(quantiles_results)
@@ -889,7 +894,6 @@ class SqlAlchemyDataset(MetaSqlAlchemyDataset):
 
         except ProgrammingError as pe:
             self.treat_quantiles_exception(pe)
-
 
     def _get_column_quantiles_bigquery(self, column: str, quantiles: Iterable) -> list:
         # BigQuery does not support "WITHIN", so we need a special case for it
